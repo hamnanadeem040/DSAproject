@@ -1,0 +1,47 @@
+FileZip v2.0  —  DSA Final Project
+=====================================
+
+C++ SOURCE CODE LOCATION
+--------------------------
+include/huffman.h     Huffman class declarations + CompressStats struct
+include/lzw.h         LZW class declarations + LZWStats struct
+include/rle.h         RLE class declarations + RLEStats struct
+src/huffman.cpp       HUFFMAN CODING algorithm (O(n log n))
+src/lzw.cpp           LZW algorithm (O(n), dictionary-based)
+src/rle.cpp           RLE algorithm (O(n), run-length)
+src/main_cli.cpp      Command-line interface for all 3 algorithms
+src/server.cpp        Crow REST API server (requires Crow library)
+
+OPEN WEB UI
+-----------
+Simply open:  web/index.html  in Chrome, Firefox, or Edge.
+No server needed. All compression/decompression runs in the browser.
+
+HOW TO USE THE WEB UI
+-----------------------
+1. Click "Add" or drag & drop any file
+2. Select the file by clicking on it
+3. Choose algorithm: Huffman / LZW / RLE
+4. Click "Compress" — file is compressed in real-time
+5. Click "View" to download the .huff/.lzw/.rle compressed file
+6. Click "Extract" to decompress and download the ORIGINAL file back
+7. Click "Test" to verify byte-level integrity (compress = decompress = original)
+
+WHAT MAKES THIS REAL
+---------------------
+- Compression runs actual Huffman/LZW/RLE in JavaScript
+- Same file format as the C++ implementation (HUFF/LZWF/RLEF magic headers)
+- Extract downloads the exact original file bytes (lossless)
+- Test button does byte-by-byte comparison
+
+BUILD CLI (Linux/Mac)
+----------------------
+  bash BUILD.sh
+  ./filezip demo
+  ./filezip compress huffman myfile.txt myfile.huff
+  ./filezip decompress huffman myfile.huff restored.txt
+
+BUILD CLI (Windows MinGW)
+--------------------------
+  BUILD.bat
+  filezip.exe demo

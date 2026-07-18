@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FileZip 2.0 — Multi-Algorithm Compression</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+:root{
+  --bg:#1a1a1e;--sur:#242428;--sur2:#2c2c32;--sur3:#34343a;
+  --bd:#3a3a44;--bd2:#4e4e5a;
+  --tx:#e8e8f2;--mu:#88889a;
+  --ac:#7c6ef7;--ac2:#5b4ee8;--acD:rgba(124,110,247,.14);
+  --ok:#22c55e;--wa:#f59e0b;--er:#ef4444;--co:#a78bfa;
+  --r:7px;--r2:11px;
+}
+[data-theme=light]{
+  --bg:#dfe0e8;--sur:#f0f0f5;--sur2:#ffffff;--sur3:#f8f8fc;
+  --bd:#c4c4d0;--bd2:#a8a8b8;
+  --tx:#16161e;--mu:#585868;
+  --ac:#5b4ee8;--ac2:#4338ca;--acD:rgba(91,78,232,.1);
+  --ok:#16a34a;--wa:#d97706;--er:#dc2626;--co:#7c3aed;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);font-size:13px;line-height:1.5;display:flex;flex-direction:column}
+
+/* ═══ TITLE BAR ═══════════════════════════════════════════════════ */
+.titlebar{background:#111114;border-bottom:1px solid #000;display:flex;align-items:center;padding:0;height:32px;flex-shrink:0;user-select:none}
+.tb-icon{width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tb-icon img,.tb-icon i{font-size:16px;color:var(--ac)}
+.tb-title{font-size:12px;color:#aaa;flex:1;padding-left:4px}
+.tb-wins{display:flex;margin-left:auto}
+.tb-win{width:46px;height:32px;display:flex;align-items:center;justify-content:center;font-size:12px;color:#888;cursor:pointer;transition:background .1s}
+.tb-win:hover{background:rgba(255,255,255,.08);color:#ccc}
+.tb-win.close:hover{background:#c42b1c;color:#fff}
+
+/* ═══ MENU BAR ════════════════════════════════════════════════════ */
+.menubar{background:var(--sur);border-bottom:1px solid var(--bd);height:24px;display:flex;align-items:stretch;flex-shrink:0;user-select:none}
+.mb-item{padding:0 12px;display:flex;align-items:center;font-size:12px;color:var(--mu);cursor:pointer;white-space:nowrap;position:relative}
+.mb-item:hover{background:var(--sur2);color:var(--tx)}
+.mb-item u{text-decoration:underline}
+.mb-sep{width:1px;background:var(--bd);margin:4px 0;flex-shrink:0}
+
+/* ═══ TOOLBAR ═════════════════════════════════════════════════════ */
+.toolbar{background:var(--sur);border-bottom:1px solid var(--bd);padding:3px 6px;display:flex;align-items:center;gap:2px;flex-shrink:0;flex-wrap:wrap}
+.tb-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:3px 8px;border-radius:var(--r);border:1px solid transparent;background:transparent;color:var(--tx);font-size:10px;cursor:pointer;transition:all .12s;min-width:52px;height:48px}
+.tb-btn i{font-size:20px;color:var(--mu)}
+.tb-btn:hover{background:var(--sur2);border-color:var(--bd);color:var(--ac)}
+.tb-btn:hover i{color:var(--ac)}
+.tb-btn.active-op{background:var(--acD);border-color:var(--ac);color:var(--ac)}
+.tb-btn.active-op i{color:var(--ac)}
+.tb-btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.tb-vsep{width:1px;height:44px;background:var(--bd);margin:0 4px;flex-shrink:0}
+.tb-algo-group{display:flex;flex-direction:column;gap:3px;padding:0 6px}
+.tb-algo-label{font-size:10px;color:var(--mu);text-align:center}
+.tb-algo-tabs{display:flex;gap:2px}
+.algo-tab{padding:3px 10px;border-radius:4px;border:1px solid var(--bd);background:var(--sur2);color:var(--mu);font-size:11px;font-weight:600;cursor:pointer;transition:all .12s;letter-spacing:.2px}
+.algo-tab:hover{border-color:var(--bd2);color:var(--tx)}
+.algo-tab.sel{background:var(--ac);border-color:var(--ac);color:#fff}
+
+/* ═══ ADDRESS BAR ═════════════════════════════════════════════════ */
+.addrbar{background:var(--sur2);border-bottom:1px solid var(--bd);padding:3px 8px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.addr-nav{display:flex;gap:1px}
+.addr-navbtn{width:22px;height:22px;border-radius:3px;border:1px solid var(--bd);background:var(--sur);color:var(--mu);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;transition:all .1s}
+.addr-navbtn:hover{background:var(--sur2);color:var(--tx)}
+.addr-path{flex:1;background:var(--sur);border:1px solid var(--bd);border-radius:4px;padding:2px 8px;color:var(--tx);font-size:12px;font-family:monospace;outline:none;cursor:default}
+.addr-path:focus{border-color:var(--ac);cursor:text}
+
+/* ═══ MAIN LAYOUT ══════════════════════════════════════════════════ */
+.workspace{display:flex;flex:1;overflow:hidden}
+
+/* ═══ LEFT TREE ════════════════════════════════════════════════════ */
+.tree-panel{width:200px;background:var(--sur);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.tree-panel-hd{background:var(--sur2);border-bottom:1px solid var(--bd);padding:4px 8px;font-size:10px;font-weight:700;color:var(--mu);letter-spacing:.5px;text-transform:uppercase}
+.tree-scroll{overflow-y:auto;flex:1}
+.tree-node{display:flex;align-items:center;gap:5px;padding:4px 8px;cursor:pointer;font-size:12px;white-space:nowrap;border-left:2px solid transparent;transition:all .1s}
+.tree-node:hover{background:var(--sur2)}
+.tree-node.sel{background:var(--acD);border-left-color:var(--ac);color:var(--ac)}
+.tree-node i{font-size:14px;flex-shrink:0}
+.tree-node.sub{padding-left:20px}
+.tree-divider{height:1px;background:var(--bd);margin:4px 0}
+.tree-section{padding:6px 8px 2px;font-size:10px;color:var(--mu);font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.drive-bar{margin:4px 8px;height:5px;background:var(--sur3);border-radius:3px;overflow:hidden}
+.drive-fill{height:100%;background:var(--ac);border-radius:3px;width:0%;transition:width .5s}
+
+/* ═══ CENTER FILE VIEW ═════════════════════════════════════════════ */
+.file-view{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+
+/* drop zone */
+.drop-mask{position:absolute;inset:0;background:rgba(124,110,247,.07);border:3px dashed var(--ac);z-index:30;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;pointer-events:none}
+.drop-mask.on{display:flex}
+.drop-mask i{font-size:52px;color:var(--ac)}
+.drop-mask span{font-size:16px;font-weight:700;color:var(--ac)}
+
+/* column header */
+.col-hdr{display:grid;grid-template-columns:3fr 1fr 1fr 80px 90px 100px;background:var(--sur);border-bottom:2px solid var(--bd);flex-shrink:0}
+.ch{padding:4px 8px;font-size:11px;font-weight:600;color:var(--mu);cursor:pointer;user-select:none;border-right:1px solid var(--bd);white-space:nowrap;display:flex;align-items:center;gap:4px}
+.ch:hover{background:var(--sur2);color:var(--tx)}
+.ch:last-child{border-right:none}
+
+/* file rows */
+.file-rows{flex:1;overflow-y:auto}
+.frow{display:grid;grid-template-columns:3fr 1fr 1fr 80px 90px 100px;border-bottom:1px solid rgba(255,255,255,.04);cursor:default;transition:background .08s}
+[data-theme=light] .frow{border-bottom:1px solid rgba(0,0,0,.06)}
+.frow:hover .fc{background:var(--sur2)}
+.frow.sel .fc{background:var(--acD)!important}
+.frow.sel .fc:first-child{border-left:2px solid var(--ac)}
+.fc{padding:4px 8px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center}
+.fc.r{justify-content:flex-end;font-family:monospace}
+.fc i{font-size:15px;margin-right:6px;flex-shrink:0}
+.fc .status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-right:6px}
+
+/* empty state */
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--mu)}
+.empty-state i{font-size:56px;opacity:.25}
+.empty-state .es-t{font-size:14px;font-weight:600;opacity:.5}
+.empty-state .es-s{font-size:12px;opacity:.4;text-align:center;max-width:220px;line-height:1.6}
+.empty-state .es-btn{margin-top:4px;padding:7px 18px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sur2);color:var(--tx);font-size:12px;cursor:pointer;transition:all .12s}
+.empty-state .es-btn:hover{border-color:var(--ac);background:var(--acD);color:var(--ac)}
+
+/* ═══ RIGHT INFO PANEL ═════════════════════════════════════════════ */
+.info-panel{width:240px;background:var(--sur);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.ip-tabs{display:flex;border-bottom:1px solid var(--bd);flex-shrink:0}
+.ip-tab{flex:1;padding:6px 2px;text-align:center;font-size:10px;font-weight:700;color:var(--mu);cursor:pointer;border-bottom:2px solid transparent;letter-spacing:.3px;text-transform:uppercase;transition:all .12s}
+.ip-tab.sel{color:var(--ac);border-bottom-color:var(--ac);background:var(--acD)}
+.ip-body{flex:1;overflow-y:auto;padding:10px}
+
+/* info rows */
+.sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mu);padding-bottom:5px;border-bottom:1px solid var(--bd);margin-bottom:8px;margin-top:12px;display:flex;align-items:center;gap:5px}
+.sec-title:first-child{margin-top:0}
+.ir{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.05)}
+[data-theme=light] .ir{border-bottom:1px dashed rgba(0,0,0,.07)}
+.ir:last-child{border-bottom:none}
+.ik{font-size:11px;color:var(--mu)}
+.iv{font-size:11px;font-weight:600;font-family:monospace;text-align:right;max-width:130px;overflow:hidden;text-overflow:ellipsis}
+.iv.ac{color:var(--ac)}.iv.ok{color:var(--ok)}.iv.wa{color:var(--wa)}.iv.er{color:var(--er)}
+
+/* preview box */
+.preview-box{background:var(--sur2);border:1px solid var(--bd);border-radius:var(--r);padding:10px;margin-top:10px;font-size:11px;font-family:monospace;color:var(--mu);white-space:pre-wrap;word-break:break-all;max-height:100px;overflow:hidden}
+
+/* bar chart */
+.bc-wrap{margin:8px 0}
+.bc-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.bc-lbl{width:52px;font-size:10px;color:var(--mu);text-align:right;flex-shrink:0}
+.bc-track{flex:1;height:12px;background:var(--sur2);border-radius:3px;overflow:hidden}
+.bc-fill{height:100%;border-radius:3px;transition:width .7s cubic-bezier(.16,1,.3,1)}
+.bc-pct{width:38px;font-size:10px;font-weight:700;font-family:monospace;flex-shrink:0}
+.bc-fill.hf{background:var(--ac)}
+.bc-fill.lz{background:var(--ok)}
+.bc-fill.rl{background:var(--wa)}
+
+/* ds cards */
+.ds-card{background:var(--sur2);border:1px solid var(--bd);border-radius:var(--r);padding:9px;margin-bottom:7px}
+.dsc-top{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.dsc-ico{width:24px;height:24px;border-radius:4px;background:var(--acD);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--ac);flex-shrink:0}
+.dsc-nm{font-size:11px;font-weight:700}
+.dsc-cx{font-size:10px;font-family:monospace;color:var(--co)}
+.dsc-desc{font-size:10px;color:var(--mu);line-height:1.5}
+
+/* history */
+.hi{display:flex;align-items:center;gap:7px;padding:6px 4px;border-radius:5px;border:1px solid transparent;transition:all .1s;margin-bottom:2px}
+.hi:hover{background:var(--sur2);border-color:var(--bd)}
+.hi-ico{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.hi-ico.c{background:var(--acD);color:var(--ac)}
+.hi-ico.d{background:rgba(34,197,94,.12);color:var(--ok)}
+.hi-ico.t{background:rgba(245,158,11,.12);color:var(--wa)}
+.hi-nm{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.hi-sub{font-size:10px;color:var(--mu)}
+.hi-ts{margin-left:auto;font-size:10px;color:var(--mu);white-space:nowrap}
+.empty-hist{text-align:center;padding:24px 0;color:var(--mu);font-size:11px}
+.empty-hist i{display:block;font-size:22px;margin-bottom:5px;opacity:.3}
+
+/* ═══ STATUS BAR ═══════════════════════════════════════════════════ */
+.statusbar{background:var(--sur);border-top:1px solid var(--bd);height:22px;display:flex;align-items:center;padding:0 10px;gap:16px;font-size:11px;color:var(--mu);flex-shrink:0}
+.sb-item{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.sb-item strong{color:var(--tx)}
+.sb-prog{flex:1;max-width:160px;height:4px;background:var(--bd);border-radius:2px;overflow:hidden;display:none}
+.sb-prog.on{display:block}
+.sb-prog-fill{height:100%;background:var(--ac);border-radius:2px;transition:width .15s;width:0%}
+.sb-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+
+/* ═══ DIALOG / MODAL ═══════════════════════════════════════════════ */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{background:var(--sur);border:1px solid var(--bd2);border-radius:var(--r2);width:460px;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden}
+.modal-title{background:var(--sur2);padding:10px 16px;font-size:13px;font-weight:700;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:8px}
+.modal-title i{font-size:16px;color:var(--ac)}
+.modal-body{padding:16px}
+.modal-row{margin-bottom:12px}
+.modal-row label{display:block;font-size:11px;color:var(--mu);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.modal-row input,.modal-row select{width:100%;background:var(--sur2);border:1px solid var(--bd);border-radius:var(--r);padding:7px 10px;color:var(--tx);font-size:12px;outline:none}
+.modal-row input:focus,.modal-row select:focus{border-color:var(--ac)}
+.modal-row select option{background:var(--sur)}
+.modal-foot{padding:10px 16px;background:var(--sur2);border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end}
+.m-btn{padding:6px 18px;border-radius:var(--r);border:1px solid var(--bd);background:var(--sur);color:var(--tx);font-size:12px;font-weight:600;cursor:pointer;transition:all .12s}
+.m-btn:hover{border-color:var(--bd2);background:var(--sur2)}
+.m-btn.primary{background:var(--ac);border-color:var(--ac);color:#fff}
+.m-btn.primary:hover{background:var(--ac2);border-color:var(--ac2)}
+
+/* ═══ TOAST ════════════════════════════════════════════════════════ */
+.toast-host{position:fixed;bottom:32px;right:12px;display:flex;flex-direction:column;gap:5px;z-index:999}
+.toast{padding:8px 14px;border-radius:var(--r);font-size:12px;font-weight:500;display:flex;align-items:center;gap:8px;border:1px solid var(--bd);background:var(--sur);min-width:200px;animation:tIn .18s ease;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.toast i{font-size:15px;flex-shrink:0}
+.toast.ok{border-color:var(--ok)}.toast.ok i{color:var(--ok)}
+.toast.er{border-color:var(--er)}.toast.er i{color:var(--er)}
+.toast.inf{border-color:var(--ac)}.toast.inf i{color:var(--ac)}
+.toast.wa{border-color:var(--wa)}.toast.wa i{color:var(--wa)}
+@keyframes tIn{from{transform:translateX(24px);opacity:0}}
+
+/* ═══ SCROLLBAR ════════════════════════════════════════════════════ */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:var(--sur)}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--mu)}
+
+/* ═══ PROGRESS MODAL ═══════════════════════════════════════════════ */
+.prog-modal{background:var(--sur);border:1px solid var(--bd2);border-radius:var(--r2);width:380px;padding:20px;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.prog-title{font-size:14px;font-weight:700;margin-bottom:4px}
+.prog-sub{font-size:11px;color:var(--mu);margin-bottom:14px}
+.prog-bar{height:6px;background:var(--sur2);border-radius:3px;overflow:hidden;margin-bottom:8px}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--ac),var(--co));border-radius:3px;transition:width .2s}
+.prog-detail{display:flex;justify-content:space-between;font-size:11px;color:var(--mu)}
+
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+
+<!-- ═══ TITLE BAR ══════════════════════════════════════════════════ -->
+<div class="titlebar">
+  <div class="tb-icon"><i class="ti ti-archive"></i></div>
+  <div class="tb-title">FileZip 2.0 — Multi-Algorithm Compressor (DSA Project)</div>
+  <div class="tb-wins">
+    <div class="tb-win"><i class="ti ti-minus"></i></div>
+    <div class="tb-win"><i class="ti ti-square"></i></div>
+    <div class="tb-win close"><i class="ti ti-x"></i></div>
+  </div>
+</div>
+
+<!-- ═══ MENU BAR ═══════════════════════════════════════════════════ -->
+<div class="menubar">
+  <div class="mb-item"><u>F</u>ile</div>
+  <div class="mb-item"><u>C</u>ommands</div>
+  <div class="mb-item"><u>T</u>ools</div>
+  <div class="mb-item" onclick="showAbout()"><u>H</u>elp</div>
+  <div class="mb-sep"></div>
+  <div class="mb-item" style="margin-left:auto;cursor:pointer" id="themeBtn">
+    <i class="ti ti-moon" id="themeIco" style="margin-right:4px"></i> Theme
+  </div>
+</div>
+
+<!-- ═══ TOOLBAR ════════════════════════════════════════════════════ -->
+<div class="toolbar">
+  <label class="tb-btn" for="fileInput" title="Add files (Ctrl+O)">
+    <i class="ti ti-folder-open"></i>Add
+  </label>
+  <input type="file" id="fileInput" multiple>
+
+  <button class="tb-btn" id="btnCompress" disabled title="Compress selected (Ctrl+Enter)">
+    <i class="ti ti-file-zip"></i>Compress
+  </button>
+  <button class="tb-btn" id="btnExtract" disabled title="Extract / Decompress selected">
+    <i class="ti ti-file-export"></i>Extract
+  </button>
+  <button class="tb-btn" id="btnTest" disabled title="Test archive integrity">
+    <i class="ti ti-shield-check"></i>Test
+  </button>
+  <button class="tb-btn" id="btnView" disabled title="View / download file">
+    <i class="ti ti-eye"></i>View
+  </button>
+
+  <div class="tb-vsep"></div>
+
+  <button class="tb-btn" id="btnDelete" disabled title="Remove from list (Del)">
+    <i class="ti ti-trash"></i>Delete
+  </button>
+  <button class="tb-btn" onclick="clearAll()" title="Clear workspace">
+    <i class="ti ti-eraser"></i>Clear
+  </button>
+  <button class="tb-btn" onclick="selectAll()" title="Select all (Ctrl+A)">
+    <i class="ti ti-select-all"></i>Sel. All
+  </button>
+
+  <div class="tb-vsep"></div>
+
+  <div class="tb-algo-group">
+    <div class="tb-algo-label">ALGORITHM</div>
+    <div class="tb-algo-tabs">
+      <div class="algo-tab sel" data-a="huffman" title="Huffman Coding — O(n log n)">Huffman</div>
+      <div class="algo-tab" data-a="lzw" title="Lempel-Ziv-Welch — O(n)">LZW</div>
+      <div class="algo-tab" data-a="rle" title="Run-Length Encoding — O(n)">RLE</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ADDRESS BAR ═════════════════════════════════════════════════ -->
+<div class="addrbar">
+  <div class="addr-nav">
+    <div class="addr-navbtn" title="Back"><i class="ti ti-chevron-left"></i></div>
+    <div class="addr-navbtn" title="Forward"><i class="ti ti-chevron-right"></i></div>
+    <div class="addr-navbtn" title="Up"><i class="ti ti-chevron-up"></i></div>
+  </div>
+  <input class="addr-path" id="addrPath" value="FileZip:\Workspace\" readonly>
+</div>
+
+<!-- ═══ WORKSPACE ═══════════════════════════════════════════════════ -->
+<div class="workspace">
+
+  <!-- Left tree -->
+  <div class="tree-panel">
+    <div class="tree-panel-hd"><i class="ti ti-folder-filled" style="margin-right:4px;color:var(--wa)"></i>Navigator</div>
+    <div class="tree-scroll">
+      <div class="tree-node sel" onclick="treeNav(this,'Workspace')">
+        <i class="ti ti-archive" style="color:var(--ac)"></i> FileZip Workspace
+      </div>
+      <div class="tree-node sub" onclick="treeNav(this,'Compressed')">
+        <i class="ti ti-folder-filled" style="color:var(--wa)"></i> Compressed
+      </div>
+      <div class="tree-node sub" onclick="treeNav(this,'Originals')">
+        <i class="ti ti-folder-filled" style="color:var(--wa)"></i> Originals
+      </div>
+      <div class="tree-node sub" onclick="treeNav(this,'Restored')">
+        <i class="ti ti-folder-filled" style="color:var(--wa)"></i> Restored
+      </div>
+      <div class="tree-divider"></div>
+      <div class="tree-section">Algorithms</div>
+      <div class="tree-node sub" onclick="setAlgo('huffman');treeNav(this,'Huffman')">
+        <i class="ti ti-binary-tree" style="color:var(--ac)"></i> Huffman
+      </div>
+      <div class="tree-node sub" onclick="setAlgo('lzw');treeNav(this,'LZW')">
+        <i class="ti ti-database" style="color:var(--ok)"></i> LZW
+      </div>
+      <div class="tree-node sub" onclick="setAlgo('rle');treeNav(this,'RLE')">
+        <i class="ti ti-list" style="color:var(--wa)"></i> RLE
+      </div>
+      <div class="tree-divider"></div>
+      <div class="tree-section">Storage</div>
+      <div class="drive-bar"><div class="drive-fill" id="driveBar"></div></div>
+      <div style="padding:2px 8px 6px;font-size:10px;color:var(--mu)" id="driveLabel">0 B used</div>
+    </div>
+  </div>
+
+  <!-- Center file view -->
+  <div class="file-view">
+    <div class="drop-mask" id="dropMask">
+      <i class="ti ti-cloud-upload"></i>
+      <span>Drop files here</span>
+    </div>
+
+    <!-- Column headers -->
+    <div class="col-hdr">
+      <div class="ch"><i class="ti ti-file" style="font-size:11px"></i> Name</div>
+      <div class="ch" style="justify-content:flex-end">Size</div>
+      <div class="ch" style="justify-content:flex-end">Packed</div>
+      <div class="ch" style="justify-content:flex-end">Ratio</div>
+      <div class="ch">Type</div>
+      <div class="ch">Status</div>
+    </div>
+
+    <!-- Rows -->
+    <div class="file-rows" id="fileRows"></div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <i class="ti ti-files"></i>
+      <div class="es-t">Workspace empty</div>
+      <div class="es-s">Drag & drop files here or click Add to load files for compression</div>
+      <label class="es-btn" for="fileInput"><i class="ti ti-plus" style="margin-right:4px"></i>Add files</label>
+    </div>
+  </div>
+
+  <!-- Right info panel -->
+  <div class="info-panel">
+    <div class="ip-tabs">
+      <div class="ip-tab sel" data-t="info">Info</div>
+      <div class="ip-tab" data-t="compare">Compare</div>
+      <div class="ip-tab" data-t="ds">DSA</div>
+      <div class="ip-tab" data-t="log">Log</div>
+    </div>
+    <div class="ip-body" id="tabInfo">
+      <div id="noSel" style="text-align:center;padding:24px 0;color:var(--mu)">
+        <i class="ti ti-cursor-text" style="font-size:28px;display:block;margin-bottom:6px;opacity:.3"></i>
+        <div style="font-size:11px">Select a file to view details</div>
+      </div>
+      <div id="selInfo" style="display:none"></div>
+    </div>
+    <div class="ip-body" id="tabCompare" style="display:none">
+      <div id="compareContent">
+        <div style="text-align:center;padding:20px 0;color:var(--mu)">
+          <i class="ti ti-chart-bar" style="font-size:28px;display:block;margin-bottom:6px;opacity:.3"></i>
+          <div style="font-size:11px">Compress a file to see algorithm comparison</div>
+        </div>
+      </div>
+    </div>
+    <div class="ip-body" id="tabDs" style="display:none">
+      <div class="ds-card">
+        <div class="dsc-top"><div class="dsc-ico"><i class="ti ti-sort-ascending"></i></div>
+          <div><div class="dsc-nm">Min-Heap</div><div class="dsc-cx">O(log n) insert/extract</div></div>
+        </div>
+        <div class="dsc-desc">std::priority_queue — always merges two lowest-frequency nodes in Huffman tree building phase.</div>
+      </div>
+      <div class="ds-card">
+        <div class="dsc-top"><div class="dsc-ico"><i class="ti ti-binary-tree"></i></div>
+          <div><div class="dsc-nm">Binary Tree</div><div class="dsc-cx">O(n) DFS traversal</div></div>
+        </div>
+        <div class="dsc-desc">HuffNode with left/right children. Leaves store characters; internal nodes store frequency sums.</div>
+      </div>
+      <div class="ds-card">
+        <div class="dsc-top"><div class="dsc-ico"><i class="ti ti-table"></i></div>
+          <div><div class="dsc-nm">Hash Table</div><div class="dsc-cx">O(1) avg lookup/insert</div></div>
+        </div>
+        <div class="dsc-desc">unordered_map for char→freq (Huffman), char→code (Huffman), string→code (LZW encoder), code→string (LZW decoder).</div>
+      </div>
+      <div class="ds-card">
+        <div class="dsc-top"><div class="dsc-ico"><i class="ti ti-layers"></i></div>
+          <div><div class="dsc-nm">Dynamic Array</div><div class="dsc-cx">O(1) amortized append</div></div>
+        </div>
+        <div class="dsc-desc">std::vector for byte buffers, bit-streams, LZW code sequences, and RLE encoded output.</div>
+      </div>
+      <div class="ds-card">
+        <div class="dsc-top"><div class="dsc-ico"><i class="ti ti-letter-a"></i></div>
+          <div><div class="dsc-nm">String Dictionary</div><div class="dsc-cx">O(k) hash — LZW only</div></div>
+        </div>
+        <div class="dsc-desc">LZW builds dictionary of variable-length byte sequences, keyed by std::string for O(1) average lookup.</div>
+      </div>
+    </div>
+    <div class="ip-body" id="tabLog" style="display:none">
+      <div id="logList"><div class="empty-hist"><i class="ti ti-clock"></i>No operations yet</div></div>
+    </div>
+  </div>
+
+</div><!-- /workspace -->
+
+<!-- ═══ STATUS BAR ══════════════════════════════════════════════════ -->
+<div class="statusbar">
+  <div class="sb-item"><i class="ti ti-files"></i>Files: <strong id="sbFiles">0</strong></div>
+  <div class="sb-item"><i class="ti ti-database"></i>Size: <strong id="sbSize">0 B</strong></div>
+  <div class="sb-item"><i class="ti ti-check"></i>Selected: <strong id="sbSel">0</strong></div>
+  <div class="sb-prog" id="sbProg"><div class="sb-prog-fill" id="sbProgFill"></div></div>
+  <div class="sb-right">
+    <div class="sb-item" id="sbMsg">Ready — drag files or click Add</div>
+    <div class="sb-item"><strong id="sbAlgo" style="color:var(--ac)">HUFFMAN</strong></div>
+  </div>
+</div>
+
+<!-- ═══ PROGRESS MODAL ══════════════════════════════════════════════ -->
+<div class="modal-bg" id="progModal">
+  <div class="prog-modal">
+    <div class="prog-title" id="progTitle">Compressing…</div>
+    <div class="prog-sub" id="progSub">Please wait</div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    <div class="prog-detail">
+      <span id="progLeft">0%</span>
+      <span id="progRight">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TOAST HOST ══════════════════════════════════════════════════ -->
+<div class="toast-host" id="toastHost"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+//  REAL HUFFMAN CODING — JavaScript implementation
+//  Matches the C++ implementation exactly (same file format)
+// ════════════════════════════════════════════════════════════════════
+const Huffman = (() => {
+  function buildFreq(bytes) {
+    const f = new Uint32Array(256);
+    for (const b of bytes) f[b]++;
+    return f;
+  }
+
+  function buildTree(freq) {
+    // Min-heap via sorted array (priority queue simulation)
+    const heap = [];
+    for (let i = 0; i < 256; i++) {
+      if (freq[i] > 0) heap.push({ ch: i, freq: freq[i], left: null, right: null, leaf: true });
+    }
+    if (heap.length === 0) return null;
+    heap.sort((a, b) => a.freq - b.freq);
+
+    while (heap.length > 1) {
+      const l = heap.shift(), r = heap.shift();
+      const node = { ch: 0, freq: l.freq + r.freq, left: l, right: r, leaf: false };
+      // Insert sorted
+      let i = 0;
+      while (i < heap.length && heap[i].freq <= node.freq) i++;
+      heap.splice(i, 0, node);
+    }
+    return heap[0];
+  }
+
+  function buildCodes(node, prefix, codes) {
+    if (!node) return;
+    if (node.leaf) { codes[node.ch] = prefix || '0'; return; }
+    buildCodes(node.left,  prefix + '0', codes);
+    buildCodes(node.right, prefix + '1', codes);
+  }
+
+  function serializeTree(node, buf) {
+    if (!node) return;
+    if (node.leaf) { buf.push(0x01); buf.push(node.ch); return; }
+    buf.push(0x00);
+    serializeTree(node.left, buf);
+    serializeTree(node.right, buf);
+  }
+
+  function deserializeTree(buf, pos) {
+    const tag = buf[pos.v++];
+    if (tag === 0x01) return { ch: buf[pos.v++], leaf: true, left: null, right: null };
+    const left  = deserializeTree(buf, pos);
+    const right = deserializeTree(buf, pos);
+    return { leaf: false, left, right };
+  }
+
+  function compress(bytes) {
+    const t0 = performance.now();
+    const freq  = buildFreq(bytes);
+    const root  = buildTree(freq);
+    const codes = {};
+    buildCodes(root, '', codes);
+
+    const treeBuf = [];
+    serializeTree(root, treeBuf);
+
+    // Encode bit stream
+    let bitStr = '';
+    for (const b of bytes) bitStr += codes[b];
+
+    const padding = (8 - (bitStr.length % 8)) % 8;
+    bitStr += '0'.repeat(padding);
+
+    const bitBytes = new Uint8Array(bitStr.length / 8);
+    for (let i = 0; i < bitBytes.length; i++) {
+      bitBytes[i] = parseInt(bitStr.slice(i * 8, i * 8 + 8), 2);
+    }
+
+    // Build output: HUFF magic + orig size (4) + tree size (4) + tree + padding byte + bits
+    const out = new Uint8Array(4 + 4 + 4 + treeBuf.length + 1 + bitBytes.length);
+    let p = 0;
+    out[p++]=0x48;out[p++]=0x55;out[p++]=0x46;out[p++]=0x46; // HUFF
+    const os = bytes.length;
+    out[p++]=os&0xFF;out[p++]=(os>>8)&0xFF;out[p++]=(os>>16)&0xFF;out[p++]=(os>>24)&0xFF;
+    const ts = treeBuf.length;
+    out[p++]=ts&0xFF;out[p++]=(ts>>8)&0xFF;out[p++]=(ts>>16)&0xFF;out[p++]=(ts>>24)&0xFF;
+    for (const b of treeBuf) out[p++] = b;
+    out[p++] = padding;
+    for (const b of bitBytes) out[p++] = b;
+
+    return { data: out, time: performance.now() - t0 };
+  }
+
+  function decompress(bytes) {
+    const t0 = performance.now();
+    if (bytes[0]!==0x48||bytes[1]!==0x55||bytes[2]!==0x46||bytes[3]!==0x46)
+      throw new Error('Not a valid .huff file');
+
+    let p = 4;
+    const origSize = bytes[p]|(bytes[p+1]<<8)|(bytes[p+2]<<16)|(bytes[p+3]<<24); p+=4;
+    const treeSize = bytes[p]|(bytes[p+1]<<8)|(bytes[p+2]<<16)|(bytes[p+3]<<24); p+=4;
+
+    const treeBuf = bytes.slice(p, p + treeSize); p += treeSize;
+    const pos = { v: 0 };
+    const root = deserializeTree(treeBuf, pos);
+
+    const padding = bytes[p++];
+    const totalBits = (bytes.length - p) * 8 - padding;
+
+    const output = new Uint8Array(origSize);
+    let outIdx = 0, bitsRead = 0, cur = root;
+
+    for (let i = p; i < bytes.length && bitsRead < totalBits; i++) {
+      const byte = bytes[i];
+      for (let bit = 7; bit >= 0 && bitsRead < totalBits; bit--, bitsRead++) {
+        cur = ((byte >> bit) & 1) ? cur.right : cur.left;
+        if (cur.leaf) {
+          output[outIdx++] = cur.ch;
+          cur = root;
+          if (outIdx >= origSize) break;
+        }
+      }
+    }
+    return { data: output, time: performance.now() - t0 };
+  }
+
+  return { compress, decompress };
+})();
+
+// ════════════════════════════════════════════════════════════════════
+//  REAL LZW — JavaScript implementation
+// ════════════════════════════════════════════════════════════════════
+const LZW = (() => {
+  const MAX_CODE  = (1 << 24) - 1;
+  const INIT_SIZE = 256;
+
+  function compress(bytes) {
+    const t0 = performance.now();
+    const dict = new Map();
+    for (let i = 0; i < INIT_SIZE; i++) dict.set(String.fromCharCode(i), i);
+    let nextCode = INIT_SIZE;
+    const codes = [];
+
+    let cur = String.fromCharCode(bytes[0]);
+    for (let i = 1; i < bytes.length; i++) {
+      const next = cur + String.fromCharCode(bytes[i]);
+      if (dict.has(next)) { cur = next; }
+      else {
+        codes.push(dict.get(cur));
+        if (nextCode <= MAX_CODE) dict.set(next, nextCode++);
+        cur = String.fromCharCode(bytes[i]);
+      }
+    }
+    codes.push(dict.get(cur));
+
+    // Write LZWF header + 24-bit codes
+    const out = new Uint8Array(4 + 4 + 4 + codes.length * 3);
+    let p = 0;
+    out[p++]=0x4C;out[p++]=0x5A;out[p++]=0x57;out[p++]=0x46; // LZWF
+    const os = bytes.length;
+    out[p++]=os&0xFF;out[p++]=(os>>8)&0xFF;out[p++]=(os>>16)&0xFF;out[p++]=(os>>24)&0xFF;
+    const cnt = codes.length;
+    out[p++]=cnt&0xFF;out[p++]=(cnt>>8)&0xFF;out[p++]=(cnt>>16)&0xFF;out[p++]=(cnt>>24)&0xFF;
+    for (const c of codes) {
+      out[p++]=c&0xFF; out[p++]=(c>>8)&0xFF; out[p++]=(c>>16)&0xFF;
+    }
+    return { data: out, time: performance.now() - t0 };
+  }
+
+  function decompress(bytes) {
+    const t0 = performance.now();
+    if (bytes[0]!==0x4C||bytes[1]!==0x5A||bytes[2]!==0x57||bytes[3]!==0x46)
+      throw new Error('Not a valid .lzw file');
+
+    let p = 4;
+    const origSize = bytes[p]|(bytes[p+1]<<8)|(bytes[p+2]<<16)|(bytes[p+3]<<24); p+=4;
+    const codeCnt  = bytes[p]|(bytes[p+1]<<8)|(bytes[p+2]<<16)|(bytes[p+3]<<24); p+=4;
+
+    const codes = [];
+    for (let i = 0; i < codeCnt; i++, p+=3)
+      codes.push(bytes[p]|(bytes[p+1]<<8)|(bytes[p+2]<<16));
+
+    const dict = [];
+    for (let i = 0; i < INIT_SIZE; i++) dict.push(String.fromCharCode(i));
+
+    const chunks = [];
+    let prev = dict[codes[0]];
+    chunks.push(prev);
+
+    for (let i = 1; i < codes.length; i++) {
+      const code = codes[i];
+      let entry;
+      if (code < dict.length) entry = dict[code];
+      else if (code === dict.length) entry = prev + prev[0];
+      else throw new Error('Bad LZW code');
+      chunks.push(entry);
+      if (dict.length <= MAX_CODE) dict.push(prev + entry[0]);
+      prev = entry;
+    }
+
+    const full = chunks.join('');
+    const out = new Uint8Array(origSize);
+    for (let i = 0; i < origSize; i++) out[i] = full.charCodeAt(i) & 0xFF;
+    return { data: out, time: performance.now() - t0 };
+  }
+
+  return { compress, decompress };
+})();
+
+// ════════════════════════════════════════════════════════════════════
+//  REAL RLE — JavaScript implementation
+// ════════════════════════════════════════════════════════════════════
+const RLE = (() => {
+  const RUN_ESC = 0xFF, LIT_ESC = 0xFE, MAX_RUN = 255;
+
+  function compress(bytes) {
+    const t0 = performance.now();
+    const out = [0x52,0x4C,0x45,0x46]; // RLEF
+    const os = bytes.length;
+    out.push(os&0xFF,(os>>8)&0xFF,(os>>16)&0xFF,(os>>24)&0xFF);
+
+    let i = 0, runs = 0;
+    while (i < bytes.length) {
+      const cur = bytes[i];
+      let run = 1;
+      while (i + run < bytes.length && bytes[i+run] === cur && run < MAX_RUN) run++;
+
+      if (run >= 3) {
+        out.push(RUN_ESC, run, cur);
+        runs++; i += run;
+      } else {
+        const litStart = i;
+        let litLen = 0;
+        while (i < bytes.length && litLen < MAX_RUN) {
+          let peek = 1;
+          while (i+peek < bytes.length && bytes[i+peek] === bytes[i] && peek < MAX_RUN) peek++;
+          if (peek >= 3) break;
+          i++; litLen++;
+        }
+        if (litLen > 0) {
+          out.push(LIT_ESC, litLen);
+          for (let k = litStart; k < litStart + litLen; k++) out.push(bytes[k]);
+        }
+      }
+    }
+    const data = new Uint8Array(out);
+    return { data, time: performance.now() - t0, runs };
+  }
+
+  function decompress(bytes) {
+    const t0 = performance.now();
+    if (bytes[0]!==0x52||bytes[1]!==0x4C||bytes[2]!==0x45||bytes[3]!==0x46)
+      throw new Error('Not a valid .rle file');
+
+    const origSize = bytes[4]|(bytes[5]<<8)|(bytes[6]<<16)|(bytes[7]<<24);
+    const out = new Uint8Array(origSize);
+    let p = 8, q = 0, runs = 0;
+
+    while (p < bytes.length && q < origSize) {
+      const esc = bytes[p++];
+      if (esc === RUN_ESC) {
+        const cnt  = bytes[p++], byte = bytes[p++];
+        for (let k = 0; k < cnt && q < origSize; k++) out[q++] = byte;
+        runs++;
+      } else if (esc === LIT_ESC) {
+        const cnt = bytes[p++];
+        for (let k = 0; k < cnt && q < origSize; k++) out[q++] = bytes[p++];
+      } else {
+        out[q++] = esc;
+      }
+    }
+    return { data: out, time: performance.now() - t0, runs };
+  }
+
+  return { compress, decompress };
+})();
+
+// ════════════════════════════════════════════════════════════════════
+//  APPLICATION STATE
+// ════════════════════════════════════════════════════════════════════
+let files    = [];    // { name, size, type, date, origBytes, compBytes, compData, ext, status, algo, stats }
+let selected = new Set();
+let algo     = 'huffman';
+let opLog    = [];
+let dark     = true;
+
+// ════════════════════════════════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const fmtBytes = b => {
+  if (!b) return '0 B';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(2) + ' MB';
+};
+const fmtDate = d => new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) + ' ' + new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+const ago = ts => { const s=Math.round((Date.now()-ts)/1000); return s<60?s+'s ago':s<3600?Math.round(s/60)+'m ago':Math.round(s/3600)+'h ago'; };
+
+function toast(msg, type='inf', dur=3000) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  const ico = {ok:'ti-check',er:'ti-alert-circle',inf:'ti-info-circle',wa:'ti-alert-triangle'};
+  el.innerHTML = `<i class="ti ${ico[type]||'ti-info-circle'}"></i>${msg}`;
+  $('toastHost').appendChild(el);
+  setTimeout(() => el.remove(), dur);
+}
+
+function setStatus(msg) { $('sbMsg').textContent = msg; }
+
+function progress(show, pct=0, title='', sub='', right='') {
+  const m = $('progModal');
+  if (!show) { m.classList.remove('on'); return; }
+  m.classList.add('on');
+  $('progTitle').textContent = title;
+  $('progSub').textContent   = sub;
+  $('progFill').style.width  = pct + '%';
+  $('progLeft').textContent  = Math.round(pct) + '%';
+  $('progRight').textContent = right;
+}
+
+function getIcon(name, type) {
+  if (name.endsWith('.huff')) return {cls:'ti-archive',   color:'var(--ac)'};
+  if (name.endsWith('.lzw'))  return {cls:'ti-database',  color:'var(--ok)'};
+  if (name.endsWith('.rle'))  return {cls:'ti-list',       color:'var(--wa)'};
+  if ((type||'').startsWith('text') || /\.(txt|csv|log|md|js|py|c|cpp|h|json|xml|html)$/i.test(name))
+    return {cls:'ti-file-text', color:'#60a5fa'};
+  if ((type||'').startsWith('image')) return {cls:'ti-photo', color:'#ec4899'};
+  if (/\.(pdf)$/i.test(name)) return {cls:'ti-file-type-pdf', color:'#ef4444'};
+  return {cls:'ti-file', color:'var(--mu)'};
+}
+
+function getRatioColor(r) {
+  if (r >= 30) return 'var(--ok)';
+  if (r >= 10) return 'var(--wa)';
+  if (r > 0)   return 'var(--mu)';
+  return 'var(--er)';
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  RENDER
+// ════════════════════════════════════════════════════════════════════
+function render() {
+  const hasSel = selected.size > 0;
+  $('btnCompress').disabled = files.length === 0 || !hasSel;
+  $('btnExtract').disabled  = !hasSel || ![...selected].some(i => files[i]?.compData);
+  $('btnTest').disabled     = !hasSel;
+  $('btnView').disabled     = !hasSel;
+  $('btnDelete').disabled   = !hasSel;
+
+  $('sbFiles').textContent = files.length;
+  $('sbSel').textContent   = selected.size;
+
+  const totalBytes = files.reduce((s,f)=>s+f.size,0);
+  $('sbSize').textContent = fmtBytes(totalBytes);
+
+  // drive bar
+  const usedKB = totalBytes / 1024;
+  const pct = Math.min(usedKB / 10240 * 100, 100); // 10 MB max display
+  $('driveBar').style.width = pct + '%';
+  $('driveLabel').textContent = fmtBytes(totalBytes) + ' used';
+
+  if (!files.length) {
+    $('fileRows').innerHTML = '';
+    $('emptyState').style.display = 'flex';
+    return;
+  }
+  $('emptyState').style.display = 'none';
+
+  $('fileRows').innerHTML = files.map((f, i) => {
+    const ico   = getIcon(f.name, f.type);
+    const sel   = selected.has(i) ? 'sel' : '';
+    const ratio = f.compData ? ((1 - f.compData.length / f.size) * 100) : null;
+    const ratioStr = ratio !== null ? (ratio > 0 ? ratio.toFixed(1)+'%' : ratio.toFixed(1)+'%') : '—';
+    const ratioColor = ratio !== null ? getRatioColor(ratio) : 'var(--mu)';
+    const packedStr = f.compData ? fmtBytes(f.compData.length) : '—';
+    const statusDot = f.status === 'compressed'   ? 'var(--ac)' :
+                      f.status === 'decompressed'  ? 'var(--ok)' :
+                      f.status === 'error'          ? 'var(--er)' : 'var(--mu)';
+    const statusTxt = f.status === 'compressed'   ? 'Compressed' :
+                      f.status === 'decompressed'  ? 'Decompressed' :
+                      f.status === 'error'          ? 'Error' : 'Ready';
+    const ext = f.name.split('.').pop().toUpperCase();
+
+    return `<div class="frow ${sel}" data-i="${i}" onclick="rowClick(event,${i})" ondblclick="rowDbl(${i})">
+      <div class="fc"><i class="ti ${ico.cls}" style="color:${ico.color}"></i>${escHtml(f.name)}</div>
+      <div class="fc r">${fmtBytes(f.size)}</div>
+      <div class="fc r" style="${f.compData?'color:var(--ac)':''}">${packedStr}</div>
+      <div class="fc r" style="color:${ratioColor};font-weight:700">${ratioStr}</div>
+      <div class="fc" style="color:var(--mu)">${ext}</div>
+      <div class="fc"><span class="status-dot" style="background:${statusDot}"></span>${statusTxt}</div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  SELECTION
+// ════════════════════════════════════════════════════════════════════
+function rowClick(e, i) {
+  if (e.ctrlKey || e.metaKey) {
+    selected.has(i) ? selected.delete(i) : selected.add(i);
+  } else if (e.shiftKey && selected.size) {
+    const last = [...selected].at(-1);
+    const lo = Math.min(last,i), hi = Math.max(last,i);
+    for (let k=lo; k<=hi; k++) selected.add(k);
+  } else {
+    selected.clear(); selected.add(i);
+  }
+  render();
+  showInfo(i);
+  updateCompare();
+}
+
+function rowDbl(i) {
+  const f = files[i];
+  if (f?.compData) downloadFile(i);
+  else toast('Compress the file first, then double-click to download', 'inf');
+}
+
+function selectAll() { files.forEach((_,i)=>selected.add(i)); render(); }
+
+// ════════════════════════════════════════════════════════════════════
+//  FILE ADD
+// ════════════════════════════════════════════════════════════════════
+function addFiles(fileList) {
+  let added = 0;
+  Array.from(fileList).forEach(f => {
+    if (f.size > 50*1024*1024) { toast(f.name + ': exceeds 50 MB', 'er'); return; }
+    if (files.find(x=>x.name===f.name)) { toast(f.name + ' already in list', 'wa'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      files.push({
+        name: f.name, size: f.size, type: f.type,
+        date: f.lastModified || Date.now(),
+        origBytes: new Uint8Array(ev.target.result),
+        compData: null, status: 'ready', algo: null, stats: null
+      });
+      render();
+    };
+    reader.readAsArrayBuffer(f);
+    added++;
+  });
+  if (added) toast('Added ' + added + ' file' + (added>1?'s':''), 'ok');
+}
+
+$('fileInput').addEventListener('change', e => addFiles(e.target.files));
+
+// Drag & drop
+document.addEventListener('dragover', e => { e.preventDefault(); $('dropMask').classList.add('on'); });
+document.addEventListener('dragleave', e => { if (!e.relatedTarget) $('dropMask').classList.remove('on'); });
+document.addEventListener('drop', e => {
+  e.preventDefault(); $('dropMask').classList.remove('on');
+  addFiles(e.dataTransfer.files);
+});
+
+// ════════════════════════════════════════════════════════════════════
+//  COMPRESS — REAL
+// ════════════════════════════════════════════════════════════════════
+$('btnCompress').addEventListener('click', doCompress);
+
+async function doCompress() {
+  const idxs = [...selected].filter(i => files[i]?.origBytes);
+  if (!idxs.length) return;
+
+  setStatus('Compressing…');
+
+  for (let qi = 0; qi < idxs.length; qi++) {
+    const i   = idxs[qi];
+    const f   = files[i];
+    const pct = Math.round((qi / idxs.length) * 100);
+
+    progress(true, pct, 'Compressing files…',
+      `Processing: ${f.name} (${qi+1}/${idxs.length})`,
+      fmtBytes(f.size));
+
+    await new Promise(r => setTimeout(r, 30)); // let UI update
+
+    try {
+      let result;
+      const bytes = f.origBytes;
+      if (algo === 'huffman') result = Huffman.compress(bytes);
+      else if (algo === 'lzw')  result = LZW.compress(bytes);
+      else                      result = RLE.compress(bytes);
+
+      const ratio = (1 - result.data.length / f.size) * 100;
+      files[i].compData  = result.data;
+      files[i].status    = 'compressed';
+      files[i].algo      = algo;
+      files[i].stats     = { origSize: f.size, compSize: result.data.length, ratio, timeSec: result.time };
+
+      const ext = algo === 'huffman' ? '.huff' : algo === 'lzw' ? '.lzw' : '.rle';
+      files[i].outputName = f.name + ext;
+
+      logOp({ op:'compress', file: f.name, algo, origSize: f.size, compSize: result.data.length, ratio, timeSec: result.time });
+    } catch(e) {
+      files[i].status = 'error';
+      toast('Error compressing ' + f.name + ': ' + e.message, 'er');
+    }
+  }
+
+  progress(true, 100, 'Complete!', 'All files processed', '');
+  setTimeout(() => progress(false), 800);
+
+  render();
+  const f0 = files[idxs[0]];
+  if (f0?.stats) showInfo(idxs[0]);
+  updateCompare();
+  renderLog();
+
+  const totalSaved = idxs.reduce((s,i) => {
+    const f = files[i];
+    return s + (f.stats ? f.size - f.compData.length : 0);
+  }, 0);
+  toast(`Compressed ${idxs.length} file(s) — saved ${fmtBytes(totalSaved)}`, 'ok');
+  setStatus('Compression complete');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  EXTRACT / DECOMPRESS — REAL (restores original file)
+// ════════════════════════════════════════════════════════════════════
+$('btnExtract').addEventListener('click', doExtract);
+
+async function doExtract() {
+  const idxs = [...selected].filter(i => files[i]?.compData);
+  if (!idxs.length) { toast('Select a compressed file first', 'wa'); return; }
+
+  setStatus('Extracting…');
+
+  for (let qi = 0; qi < idxs.length; qi++) {
+    const i = idxs[qi];
+    const f = files[i];
+    const pct = Math.round((qi / idxs.length) * 100);
+
+    progress(true, pct, 'Extracting files…',
+      `Restoring: ${f.name}`,
+      fmtBytes(f.compData.length) + ' → ' + fmtBytes(f.size));
+
+    await new Promise(r => setTimeout(r, 30));
+
+    try {
+      let result;
+      const compAlgo = f.algo || algo;
+      if (compAlgo === 'huffman')      result = Huffman.decompress(f.compData);
+      else if (compAlgo === 'lzw')     result = LZW.decompress(f.compData);
+      else                             result = RLE.decompress(f.compData);
+
+      // Download the restored original file
+      const blob = new Blob([result.data]);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = f.name; // original filename (no .huff/.lzw/.rle)
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      files[i].status = 'decompressed';
+
+      // Verify it matches original if origBytes available
+      let verified = false;
+      if (f.origBytes && result.data.length === f.origBytes.length) {
+        verified = true;
+        for (let k = 0; k < result.data.length; k++) {
+          if (result.data[k] !== f.origBytes[k]) { verified = false; break; }
+        }
+      }
+
+      logOp({ op:'extract', file: f.name, algo: compAlgo,
+        origSize: result.data.length, compSize: f.compData.length,
+        ratio: f.stats?.ratio || 0, timeSec: result.time,
+        verified });
+
+      toast(`Extracted: ${f.name} (${verified ? '✓ verified' : 'downloaded'})`, 'ok');
+    } catch(e) {
+      files[i].status = 'error';
+      toast('Error extracting ' + f.name + ': ' + e.message, 'er');
+    }
+  }
+
+  progress(true, 100, 'Extraction complete!', '', '');
+  setTimeout(() => progress(false), 800);
+  render(); renderLog();
+  setStatus('Extraction complete');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  TEST INTEGRITY
+// ════════════════════════════════════════════════════════════════════
+$('btnTest').addEventListener('click', doTest);
+
+async function doTest() {
+  const idxs = [...selected];
+  if (!idxs.length) return;
+
+  let passed = 0, failed = 0;
+  setStatus('Testing integrity…');
+
+  for (const i of idxs) {
+    const f = files[i];
+    if (!f.compData) { toast(f.name + ': not compressed yet', 'wa'); continue; }
+
+    progress(true, 50, 'Testing archive…', f.name, '');
+    await new Promise(r => setTimeout(r, 20));
+
+    try {
+      const compAlgo = f.algo || algo;
+      let result;
+      if (compAlgo === 'huffman') result = Huffman.decompress(f.compData);
+      else if (compAlgo === 'lzw') result = LZW.decompress(f.compData);
+      else result = RLE.decompress(f.compData);
+
+      // Byte-level integrity check against original
+      let ok = f.origBytes && result.data.length === f.origBytes.length;
+      if (ok) {
+        for (let k = 0; k < result.data.length; k++) {
+          if (result.data[k] !== f.origBytes[k]) { ok = false; break; }
+        }
+      }
+      ok ? passed++ : failed++;
+      logOp({ op:'test', file: f.name, algo: compAlgo, origSize: f.size, compSize: f.compData.length, ratio: f.stats?.ratio||0, timeSec:0, verified: ok });
+    } catch(e) {
+      failed++;
+      toast('Test failed for ' + f.name + ': ' + e.message, 'er');
+    }
+  }
+
+  progress(false);
+  if (passed > 0) toast(`✓ ${passed} file(s) passed integrity test`, 'ok');
+  if (failed > 0) toast(`✗ ${failed} file(s) failed integrity test`, 'er');
+  setStatus('Test complete');
+  renderLog();
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  VIEW / DOWNLOAD COMPRESSED FILE
+// ════════════════════════════════════════════════════════════════════
+$('btnView').addEventListener('click', () => {
+  const idxs = [...selected];
+  if (!idxs.length) return;
+  const f = files[idxs[0]];
+  if (f?.compData) downloadFile(idxs[0]);
+  else toast('Compress the file first', 'wa');
+});
+
+function downloadFile(i) {
+  const f = files[i];
+  if (!f?.compData) return;
+  const blob = new Blob([f.compData], { type: 'application/octet-stream' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = f.outputName || f.name + '.huff';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Downloaded: ' + a.download, 'ok');
+  logOp({ op:'download', file: f.name, algo: f.algo, origSize: f.size, compSize: f.compData.length, ratio: f.stats?.ratio||0, timeSec:0 });
+  renderLog();
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  DELETE / CLEAR
+// ════════════════════════════════════════════════════════════════════
+$('btnDelete').addEventListener('click', () => {
+  const idxs = [...selected].sort((a,b)=>b-a);
+  idxs.forEach(i => files.splice(i,1));
+  selected.clear();
+  toast('Removed ' + idxs.length + ' file(s)', 'ok');
+  render();
+});
+
+function clearAll() {
+  files = []; selected.clear(); render();
+  $('noSel').style.display = 'block'; $('selInfo').style.display = 'none';
+  toast('Workspace cleared');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  ALGORITHM SELECTION
+// ════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.algo-tab').forEach(t => {
+  t.addEventListener('click', () => setAlgo(t.dataset.a));
+});
+
+function setAlgo(a) {
+  algo = a;
+  document.querySelectorAll('.algo-tab').forEach(t => t.classList.toggle('sel', t.dataset.a === a));
+  $('sbAlgo').textContent = a.toUpperCase();
+  toast('Algorithm: ' + a.toUpperCase(), 'inf', 1500);
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  RIGHT PANEL TABS
+// ════════════════════════════════════════════════════════════════════
+document.querySelectorAll('.ip-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.ip-tab').forEach(x => x.classList.remove('sel'));
+    t.classList.add('sel');
+    ['tabInfo','tabCompare','tabDs','tabLog'].forEach(id => {
+      const el = $(id);
+      if (el) el.style.display = 'none';
+    });
+    const map = {info:'tabInfo', compare:'tabCompare', ds:'tabDs', log:'tabLog'};
+    const target = $(map[t.dataset.t]);
+    if (target) target.style.display = 'block';
+    if (t.dataset.t === 'log') renderLog();
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════
+//  INFO PANEL
+// ════════════════════════════════════════════════════════════════════
+function showInfo(i) {
+  const f = files[i];
+  if (!f) return;
+  $('noSel').style.display   = 'none';
+  $('selInfo').style.display = 'block';
+
+  let html = `
+    <div class="sec-title"><i class="ti ti-file" style="font-size:13px"></i> File Details</div>
+    <div class="ir"><span class="ik">Name</span><span class="iv">${escHtml(f.name)}</span></div>
+    <div class="ir"><span class="ik">Size</span><span class="iv">${fmtBytes(f.size)}</span></div>
+    <div class="ir"><span class="ik">Type</span><span class="iv">${f.type || f.name.split('.').pop().toUpperCase()}</span></div>
+    <div class="ir"><span class="ik">Modified</span><span class="iv">${fmtDate(f.date)}</span></div>
+    <div class="ir"><span class="ik">Status</span><span class="iv ${f.status==='compressed'?'ac':f.status==='error'?'er':'ok'}">${f.status||'ready'}</span></div>`;
+
+  if (f.stats) {
+    const r = f.stats.ratio;
+    html += `
+    <div class="sec-title" style="margin-top:14px"><i class="ti ti-file-zip" style="font-size:13px"></i> Compression Result</div>
+    <div class="ir"><span class="ik">Algorithm</span><span class="iv ac">${(f.algo||'').toUpperCase()}</span></div>
+    <div class="ir"><span class="ik">Original</span><span class="iv">${fmtBytes(f.stats.origSize)}</span></div>
+    <div class="ir"><span class="ik">Compressed</span><span class="iv ac">${fmtBytes(f.stats.compSize)}</span></div>
+    <div class="ir"><span class="ik">Saved</span><span class="iv ${r>=20?'ok':r>=0?'wa':'er'}">${r.toFixed(2)}%</span></div>
+    <div class="ir"><span class="ik">Time</span><span class="iv">${f.stats.timeSec.toFixed(1)} ms</span></div>
+    <div class="ir"><span class="ik">Output</span><span class="iv ac">${escHtml(f.outputName||'')}</span></div>`;
+  }
+
+  // Byte preview of origBytes (first 60 bytes as hex)
+  if (f.origBytes && f.origBytes.length > 0) {
+    const preview = Array.from(f.origBytes.slice(0, 48)).map(b=>b.toString(16).padStart(2,'0')).join(' ');
+    html += `<div class="sec-title" style="margin-top:14px"><i class="ti ti-code" style="font-size:13px"></i> Hex Preview</div>
+    <div class="preview-box">${preview}…</div>`;
+  }
+
+  $('selInfo').innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  COMPARE PANEL
+// ════════════════════════════════════════════════════════════════════
+function updateCompare() {
+  const i = [...selected][0];
+  const f = files[i];
+  if (!f?.origBytes) return;
+
+  // Estimate for all 3 algorithms on this file's actual content
+  const bytes = f.origBytes;
+  // Quick ratio estimate based on actual data characteristics
+  const uniqueBytes = new Set(bytes).size;
+  const huffEst = Math.max(5, Math.min(60, (1 - uniqueBytes/256) * 70 + 15));
+
+  // Count repeated patterns for LZW
+  let repeats = 0;
+  for (let k = 1; k < Math.min(bytes.length, 1000); k++) {
+    if (bytes[k] === bytes[k-1]) repeats++;
+  }
+  const repeatRatio = repeats / Math.min(bytes.length-1, 999);
+  const lzwEst  = Math.max(2, Math.min(80, huffEst * 1.3 + repeatRatio * 40));
+  const rleEst  = Math.max(0, Math.min(70, repeatRatio * 80 - 5));
+
+  const actual = f.stats ? f.stats.ratio : null;
+  const data = [
+    { name:'Huffman', cls:'hf', ratio: actual && f.algo==='huffman' ? actual : huffEst },
+    { name:'LZW',     cls:'lz', ratio: actual && f.algo==='lzw'     ? actual : lzwEst  },
+    { name:'RLE',     cls:'rl', ratio: actual && f.algo==='rle'      ? actual : rleEst   },
+  ];
+
+  const maxR = Math.max(...data.map(d=>d.ratio), 1);
+
+  $('compareContent').innerHTML = `
+    <div class="sec-title" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mu);margin-bottom:8px">
+      <i class="ti ti-chart-bar" style="font-size:13px"></i> Space Saved (estimated)
+    </div>
+    <div class="bc-wrap">
+      ${data.map(d => `
+        <div class="bc-row">
+          <div class="bc-lbl">${d.name}</div>
+          <div class="bc-track"><div class="bc-fill ${d.cls}" style="width:${Math.max(d.ratio/maxR*100,2).toFixed(1)}%"></div></div>
+          <div class="bc-pct" style="color:${getRatioColor(d.ratio)}">${d.ratio.toFixed(1)}%</div>
+        </div>`).join('')}
+    </div>
+    <div class="sec-title" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mu);margin-bottom:8px">
+      <i class="ti ti-table" style="font-size:13px"></i> Best for this file type
+    </div>
+    <div style="font-size:11px;color:var(--mu);line-height:1.7">
+      ${getBestAlgoDesc(f.name, f.type, bytes)}
+    </div>
+    ${actual ? `<div style="margin-top:10px;padding:8px;background:var(--acD);border:1px solid var(--ac);border-radius:var(--r);font-size:11px">
+      <strong style="color:var(--ac)">✓ Actual result</strong> — ${f.algo?.toUpperCase()} achieved <strong style="color:var(--ok)">${actual.toFixed(2)}% compression</strong> on this file
+    </div>` : ''}`;
+}
+
+function getBestAlgoDesc(name, type, bytes) {
+  const isText = (type||'').startsWith('text') || /\.(txt|csv|log|md|js|py|c|cpp|h|json|xml|html)$/i.test(name);
+  const isBin  = /\.(jpg|jpeg|png|gif|webp|mp3|mp4|zip|rar|gz)$/i.test(name);
+  if (isText) return '<span style="color:var(--ok)">✓ LZW</span> best for text with repeated words.<br><span style="color:var(--ac)">✓ Huffman</span> good for any text.<br><span style="color:var(--mu)">✗ RLE</span> limited benefit on varied text.';
+  if (isBin)  return '<span style="color:var(--mu)">All algorithms</span> give limited savings on already-compressed or binary files.';
+  return '<span style="color:var(--ac)">Huffman</span> is best general-purpose choice.<br><span style="color:var(--ok)">LZW</span> best if file has repeated patterns.';
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  OPERATION LOG
+// ════════════════════════════════════════════════════════════════════
+function logOp(entry) {
+  entry.ts = Date.now();
+  opLog.unshift(entry);
+  if (opLog.length > 50) opLog.pop();
+}
+
+function renderLog() {
+  if (!opLog.length) { $('logList').innerHTML = '<div class="empty-hist"><i class="ti ti-clock"></i>No operations yet</div>'; return; }
+  const icons = { compress:'ti-file-zip', extract:'ti-file-export', test:'ti-shield-check', download:'ti-download' };
+  const cls   = { compress:'c', extract:'d', test:'t', download:'d' };
+  $('logList').innerHTML = opLog.slice(0,20).map(e => `
+    <div class="hi">
+      <div class="hi-ico ${cls[e.op]||'c'}"><i class="ti ${icons[e.op]||'ti-activity'}"></i></div>
+      <div style="min-width:0;flex:1">
+        <div class="hi-nm" title="${escHtml(e.file)}">${escHtml(e.file)}</div>
+        <div class="hi-sub">${(e.algo||'').toUpperCase()} · ${e.op} · ${e.ratio.toFixed(1)}%${e.verified===true?' · ✓':e.verified===false?' · ✗':''}</div>
+      </div>
+      <div class="hi-ts">${ago(e.ts)}</div>
+    </div>`).join('');
+}
+
+setInterval(renderLog, 30000);
+
+// ════════════════════════════════════════════════════════════════════
+//  TREE NAV
+// ════════════════════════════════════════════════════════════════════
+function treeNav(el, folder) {
+  document.querySelectorAll('.tree-node').forEach(n=>n.classList.remove('sel'));
+  el.classList.add('sel');
+  $('addrPath').value = 'FileZip:\\' + folder + '\\';
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  THEME
+// ════════════════════════════════════════════════════════════════════
+$('themeBtn').addEventListener('click', () => {
+  dark = !dark;
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  $('themeIco').className = dark ? 'ti ti-moon' : 'ti ti-sun';
+});
+
+// ════════════════════════════════════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ════════════════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key==='a') { e.preventDefault(); selectAll(); }
+  if (e.key==='Delete' && selected.size && !e.target.matches('input')) $('btnDelete').click();
+  if (e.ctrlKey && e.key==='Enter') $('btnCompress').click();
+  if (e.ctrlKey && e.key==='e') { e.preventDefault(); $('btnExtract').click(); }
+});
+
+// ════════════════════════════════════════════════════════════════════
+//  ABOUT
+// ════════════════════════════════════════════════════════════════════
+function showAbout() {
+  toast('FileZip v2.0 — Huffman O(n log n) · LZW O(n) · RLE O(n) | DSA Final Project', 'inf', 4000);
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════════
+render();
+</script>
+</body>
+</html>
